@@ -123,8 +123,6 @@ jobs:
           command: |
             kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
 
-
-
 workflows:
   default:
     jobs:
