@@ -54,9 +54,9 @@ jobs:
       - run: |
           echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
 
-      - run: docker build -t rafaekhatrii/udacity-capstone:$CIRCLE_BRANCH .
+      - run: docker build -t rafaekhatrii/udacity-capstone-project-final:$CIRCLE_BRANCH .
 
-      - run: docker push rafaekhatri11/udacity-capstone:$CIRCLE_BRANCH
+      - run: docker push rafaekhatri11/udacity-capstone-project-final:$CIRCLE_BRANCH
 
   deploy-container-to-eks:
     executor: node
@@ -86,24 +86,24 @@ jobs:
             curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
             sudo mv /tmp/eksctl /usr/local/bin
             eksctl version
+      - run:
+          name: Create ekstcl
+          command: |
+            eksctl create cluster --name udacity-capstone --version 1.16 --region us-east-1 --nodegroup-name standard-workers --node-type t3.micro --nodes 3 --nodes-min 2 --nodes-max 3 --managed --zones us-east-1a,us-east-1b,us-east-1c
       # - run:
-      #     name: Create ekstcl
+      #     name: Deploy To Kubernetes Cluster
       #     command: |
-      #       eksctl create cluster --name udacity-capstone --version 1.16 --region us-east-1 --nodegroup-name standard-workers --node-type t3.micro --nodes 3 --nodes-min 2 --nodes-max 3 --managed --zones us-east-1a,us-east-1b,us-east-1c
-      - run:
-          name: Deploy To Kubernetes Cluster
-          command: |
-            aws eks --region us-east-1 update-kubeconfig --name udacity-capstone
-            kubectl apply -f kube/loadbalancer.yaml
-            kubectl apply -f kube/deployment.yaml
-            kubectl get nodes
-            kubectl get deployment
-            kubectl get pod
-            kubectl get services
-      - run:
-          name: Rolling Restart
-          command: |
-            kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
+      #       aws eks --region us-east-1 update-kubeconfig --name udacity-capstone
+      #       kubectl apply -f kube/loadbalancer.yaml
+      #       kubectl apply -f kube/deployment.yaml
+      #       kubectl get nodes
+      #       kubectl get deployment
+      #       kubectl get pod
+      #       kubectl get services
+      # - run:
+      #     name: Rolling Restart
+      #     command: |
+      #       kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
 
   rolling-restart:
     executor: node
