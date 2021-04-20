@@ -54,7 +54,7 @@ jobs:
       - run: |
           echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
 
-      - run: docker build -t rafaekhatrii/udacity-capstone-project-final:$CIRCLE_BRANCH .
+      - run: docker build -t rafaekhatri11/udacity-capstone-project-final:$CIRCLE_BRANCH .
 
       - run: docker push rafaekhatri11/udacity-capstone-project-final:$CIRCLE_BRANCH
 
