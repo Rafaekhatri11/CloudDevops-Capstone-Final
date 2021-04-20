@@ -1,0 +1,140 @@
+version: 2.1
+
+executors:
+  node:
+    docker:
+      - image: circleci/node:13.8.0
+
+jobs:
+  install-dependencies:
+    docker:
+      - image: python:3.7.3-stretch
+
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+      - run:
+          name: setup env
+          command: |
+            make setup
+      - run:
+          name: install dependencies
+          command: |
+            make install
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+  lint-code:
+    docker:
+      - image: python:3.7.3-stretch
+
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+          paths:
+            - ./venv
+      - run:
+          name: run lint
+          command: |
+            . venv/bin/activate
+            make lint
+
+  build-image:
+    machine: true
+    steps:
+      - checkout
+      - run: |
+          echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
+
+      - run: docker build -t rafaekhatrii/udacity-capstone:$CIRCLE_BRANCH .
+
+      - run: docker push rafaekhatri11/udacity-capstone:$CIRCLE_BRANCH
+
+  deploy-container-to-eks:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: Install AWS CLI dependencies
+          command: |
+            ls -la
+            sudo apt-get update && sudo apt-get install -yy less
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            aws --version
+      - run:
+          name: Install Kubectl
+          command: |
+            curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
+            curl -o kubectl.sha256 https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl.sha256
+            chmod +x ./kubectl
+            mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
+            echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+            kubectl version --short --client
+      - run:
+          name: Install ekstcl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+            sudo mv /tmp/eksctl /usr/local/bin
+            eksctl version
+      # - run:
+      #     name: Create ekstcl
+      #     command: |
+      #       eksctl create cluster --name udacity-capstone --version 1.16 --region us-east-1 --nodegroup-name standard-workers --node-type t3.micro --nodes 3 --nodes-min 2 --nodes-max 3 --managed --zones us-east-1a,us-east-1b,us-east-1c
+      - run:
+          name: Deploy To Kubernetes Cluster
+          command: |
+            aws eks --region us-east-1 update-kubeconfig --name udacity-capstone
+            kubectl apply -f kube/loadbalancer.yaml
+            kubectl apply -f kube/deployment.yaml
+            kubectl get nodes
+            kubectl get deployment
+            kubectl get pod
+            kubectl get services
+      - run:
+          name: Rolling Restart
+          command: |
+            kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
+
+  rolling-restart:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: Install Kubectl
+          command: |
+            curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
+            curl -o kubectl.sha256 https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl.sha256
+            chmod +x ./kubectl
+            mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
+            echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+            kubectl version --short --client
+      - run:
+          name: Rolling Restart
+          command: |
+            kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
+
+
+
+workflows:
+  default:
+    jobs:
+      - install-dependencies
+      - lint-code:
+          requires: [install-dependencies]
+      - build-image:
+          requires: [lint-code]
+      - deploy-container-to-eks:
+          requires: [build-image]
+          filters:
+            branches:
+              only: [test-feature-branch]
