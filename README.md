@@ -33,7 +33,7 @@ eksctl create cluster --name <cluster-name> --version 1.16 --nodegroup-name stan
 
 1. Clone the repo
 ```sh
-git clone https://github.com/Mughees605/Udacity-CloudDevOps-Capstone
+git clone https://github.com/Rafaekhatri11/CloudDevops-Capstone-Final
 ```
 2. Run `make lint` to lint the app locally.
 3. Run `./run-docker.sh` and `./run-kubernetes.sh` to run locally.
