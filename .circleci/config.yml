@@ -100,10 +100,6 @@ jobs:
             kubectl get deployment
             kubectl get pod
             kubectl get services
-      # - run:
-      #     name: Rolling Restart
-      #     command: |
-      #       kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
 
   rolling-restart:
     executor: node
@@ -138,6 +134,3 @@ workflows:
               only: [test-feature-branch]
       - rolling-restart:
           requires: [deploy-container-to-eks]
-          filters:
-            branches:
-              only: [test-feature-branch]
