@@ -137,7 +137,7 @@ workflows:
             branches:
               only: [test-feature-branch]
       - rolling-restart:
-          requires:
+          requires: [deploy-container-to-eks]
           filters:
             branches:
-              only: [deploy-container-to-eks]
+              only: [test-feature-branch]
