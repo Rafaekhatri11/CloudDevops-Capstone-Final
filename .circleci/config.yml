@@ -105,6 +105,20 @@ jobs:
           command: |
             kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
 
+  deploy-kubernetes-cluster:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: Deploy To Kubernetes Cluster
+          command: |
+            aws eks --region us-east-1 update-kubeconfig --name udacity-capstone
+            kubectl apply -f kube/loadbalancer.yaml
+            kubectl apply -f kube/deployment.yaml
+            kubectl get nodes
+            kubectl get deployment
+            kubectl get pod
+            kubectl get services
   rolling-restart:
     executor: node
     steps:
@@ -136,3 +150,14 @@ workflows:
           filters:
             branches:
               only: [test-feature-branch]
+      - deploy-kubernetes-cluster: 
+          requires: [deploy-container-to-eks]
+          filters: 
+            branches:
+              only: [test-feature-branch]
+      - rolling-restart:
+          requires: [deploy-kubernetes-cluster]
+          filters:
+            branches:
+              only: [test-feature-branch]
+      
