@@ -100,10 +100,10 @@ jobs:
       #       kubectl get deployment
       #       kubectl get pod
       #       kubectl get services
-      - run:
-          name: Rolling Restart
-          command: |
-            kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
+      # - run:
+      #     name: Rolling Restart
+      #     command: |
+      #       kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
 
   deploy-kubernetes-cluster:
     executor: node
