@@ -90,34 +90,6 @@ jobs:
       #     name: Create ekstcl
       #     command: |
       #       eksctl create cluster --name udacity-capstone --version 1.16 --region us-east-1 --nodegroup-name standard-workers --node-type t3.micro --nodes 3 --nodes-min 2 --nodes-max 3 --managed --zones us-east-1a,us-east-1b,us-east-1c
-      # - run:
-      #     name: Deploy To Kubernetes Cluster
-      #     command: |
-      #       aws eks --region us-east-1 update-kubeconfig --name udacity-capstone
-      #       kubectl apply -f kube/loadbalancer.yaml
-      #       kubectl apply -f kube/deployment.yaml
-      #       kubectl get nodes
-      #       kubectl get deployment
-      #       kubectl get pod
-      #       kubectl get services
-      # - run:
-      #     name: Rolling Restart
-      #     command: |
-      #       kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
-
-  deploy-kubernetes-cluster:
-    executor: node
-    steps:
-      - checkout
-      - run:
-          name: Install AWS CLI dependencies
-          command: |
-            ls -la
-            sudo apt-get update && sudo apt-get install -yy less
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            aws --version
       - run:
           name: Deploy To Kubernetes Cluster
           command: |
@@ -128,6 +100,11 @@ jobs:
             kubectl get deployment
             kubectl get pod
             kubectl get services
+      - run:
+          name: Rolling Restart
+          command: |
+            kubectl --kubeconfig ~/.kube/config rollout restart deployment udacity-capstone
+
   rolling-restart:
     executor: node
     steps:
@@ -159,14 +136,8 @@ workflows:
           filters:
             branches:
               only: [test-feature-branch]
-      - deploy-kubernetes-cluster: 
-          requires: [deploy-container-to-eks]
-          filters: 
-            branches:
-              only: [test-feature-branch]
       - rolling-restart:
-          requires: [deploy-kubernetes-cluster]
+          requires:
           filters:
             branches:
-              only: [test-feature-branch]
-      
+              only: [deploy-container-to-eks]
