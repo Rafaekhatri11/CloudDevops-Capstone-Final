@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: udacity-capstone
-        image: rafaekhatri11/udacity-capstone:master
+        image: rafaekhatri11/udacity-capstone-project-final:master
         imagePullPolicy: Always
         ports:
         - containerPort: 9090
